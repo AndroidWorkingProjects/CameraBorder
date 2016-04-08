@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootframe"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <RelativeLayout
+        android:id="@+id/rel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:id="@+id/boundary"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/controls"
+            android:layout_margin="50dp"
+            />
+
+        <LinearLayout
+            android:id="@+id/controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+
+            <Button
+                android:id="@+id/click"
+                android:layout_width="0dp"
+                android:alpha=".4"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Click" />
+
+
+        </LinearLayout>
+
+
+    </RelativeLayout>
+
+</FrameLayout>
