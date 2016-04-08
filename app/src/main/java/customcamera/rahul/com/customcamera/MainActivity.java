@@ -3,39 +3,31 @@ package customcamera.rahul.com.customcamera;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
+    private final int BORDER_MARGIN = 40;
     boolean previewing = false;
     private MySurfaceView mySurfaceView = null;
     private SurfaceHolder sh;
@@ -59,32 +51,38 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         cameraResolution = new int[2];
         boundaryLoc = new int[2];
         getWindow().setFormat(PixelFormat.UNKNOWN);
+
         frameLayout = (FrameLayout) findViewById(R.id.rootframe);
+        mySurfaceView = (MySurfaceView)findViewById(R.id.surfaceview);
         click = (Button) findViewById(R.id.click);
-        boundary = (RelativeLayout) findViewById(R.id.boundary);
+        //boundary = (RelativeLayout) findViewById(R.id.boundary);
         rl = (RelativeLayout) findViewById(R.id.rel);
 
         click.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                c.takePicture(null, null, new Camera.PictureCallback() {
-                    @Override
-                    public void onPictureTaken(byte[] data, Camera camera) {
-                        c.stopPreview();
 
-                        byte[] croppedImg = getCroppedPic(data);
+                Double []aspect = getRatio();
+                byte[] croppedImg = mySurfaceView.getPic((int)(boundaryLoc[0]*aspect[1]),(int)(boundaryLoc[1]*aspect[0]),(int)(boundaryWidth*aspect[1])+BORDER_MARGIN,(int)(boundaryHeight*aspect[0])+BORDER_MARGIN);
 
-                        Intent intent = new Intent(getApplicationContext(), Preview.class);
-                        intent.putExtra("PHOTO", croppedImg);
-                        startActivity(intent);
+                Intent intent = new Intent(getApplicationContext(), Preview.class);
+                intent.putExtra("PHOTO", croppedImg);
+                startActivity(intent);
 
-                        overridePendingTransition(0, 0);
-                    }
-                });
+                overridePendingTransition(0, 0);
+//                c.takePicture(null, null, new Camera.PictureCallback() {
+//                    @Override
+//                    public void onPictureTaken(byte[] data, Camera camera) {
+//                        c.stopPreview();
+//
+//                        //byte[] croppedImg = getCroppedPic(data);
+//
+//                    }
+//                });
             }
         });
 
-        boundary.getViewTreeObserver().addOnGlobalLayoutListener(
+        click.getViewTreeObserver().addOnGlobalLayoutListener(
                 new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
@@ -92,30 +90,39 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                         MainActivity.this.getWindowManager().getDefaultDisplay().getMetrics(dm);
                         //int topOffset = dm.heightPixels - frameLayout.getMeasuredHeight();
 
-                        boundary.getLocationInWindow(boundaryLoc);
+                        click.getLocationInWindow(boundaryLoc);
                         //boundaryLoc[1] -= topOffset;
 
+                        boundaryLoc[0] = BORDER_MARGIN;
+                        boundaryLoc[1] = BORDER_MARGIN;
                         previewHeight = frameLayout.getMeasuredHeight();
                         previewWidth = frameLayout.getMeasuredWidth();
 
-                        boundaryWidth = boundary.getWidth();
-                        boundaryHeight = boundary.getHeight();
+                        boundaryWidth = previewWidth-(BORDER_MARGIN*2);
+                        boundaryHeight = previewHeight-click.getHeight()-(BORDER_MARGIN*2);
 
+                        mySurfaceView.setBoundaryParams(BORDER_MARGIN, BORDER_MARGIN, boundaryWidth, boundaryHeight);
+                        mySurfaceView.invalidate();
                         //boundary.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
                         if(mySurfaceView==null) {
-                            mySurfaceView = new MySurfaceView(getApplicationContext(), boundaryLoc[0], boundaryLoc[1], boundaryWidth, boundaryHeight);
+                            //mySurfaceView = new MySurfaceView(getApplicationContext(), 40, 40, boundaryWidth, boundaryHeight);
 
-                            ScrollView.LayoutParams lp = new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-                            mySurfaceView.setLayoutParams(lp);
-                            frameLayout.addView(mySurfaceView, 1);
                             rl.bringToFront();
                         }
 
-                        sh = mySurfaceView.getHolder();
-                        sh.addCallback(MainActivity.this);
+                        //sh = mySurfaceView.getHolder();
+                        //sh.addCallback(MainActivity.this);
                     }
                 });
+    }
+
+    public Double[] getRatio(){
+        Camera.Size s = mySurfaceView.getCameraParameters().getPreviewSize();
+        double heightRatio = (double)s.height/(double)previewHeight;
+        double widthRatio = (double)s.width/(double)previewWidth;
+        Double[] ratio = {heightRatio,widthRatio};
+        return ratio;
     }
 
     private byte[] getCroppedPic(byte[] data) {
@@ -125,12 +132,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         cameraResolution[0] = bmp.getWidth();
         cameraResolution[1] = bmp.getHeight();
 
-        boundary.getLocationInWindow(boundaryLoc);
+        //boundary.getLocationInWindow(boundaryLoc);
 
-        float aspectX = (float) boundary.getMeasuredWidth()/previewWidth;
-        float aspectY = (float) boundary.getMeasuredHeight()/previewHeight;
+        float aspectX = (float) cameraResolution[0]/previewWidth;
+        float aspectY = (float) cameraResolution[1]/previewHeight;
 
-        Bitmap croppedImg = Bitmap.createBitmap(bmp, (int) (boundaryLoc[0] * aspectX), (int) (boundaryLoc[1] * aspectY), (int) (cameraResolution[0] * aspectX), (int) (cameraResolution[1] * aspectY));
+        Bitmap croppedImg = Bitmap.createBitmap(bmp, (int) (boundaryLoc[0] * aspectX), (int) (boundaryLoc[1] * aspectY), (int) (boundaryWidth * aspectX), (int) (boundaryHeight * aspectY));
 
         //Bitmap croppedImg = Bitmap.createBitmap(bmp, 0,0,bmp.getWidth(),bmp.getHeight());
 
@@ -165,6 +172,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         try {
             c = Camera.open();
+
+            Camera.Parameters parameters = c.getParameters();
+            Camera.Size myBestSize = getBestPreviewSize(previewWidth, previewHeight, parameters);
+
+            if(myBestSize != null) {
+                parameters.setPreviewSize(myBestSize.width, myBestSize.height);
+                parameters.setPictureSize(myBestSize.width, myBestSize.height);
+                c.setParameters(parameters);
+            }
         }
         catch (RuntimeException e){
             if(c!=null){
@@ -176,8 +192,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-        Camera.Parameters parameters = c.getParameters();
 
         final Display display = ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
 /*        if (display.getRotation() == Surface.ROTATION_90) {
@@ -198,14 +212,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         MainActivity.this.getWindowManager().getDefaultDisplay().getMetrics(dm);
         //int topOffset = dm.heightPixels - frameLayout.getMeasuredHeight();
 
-        boundary.getLocationInWindow(boundaryLoc);
+        //click.getLocationInWindow(boundaryLoc);
         //boundaryLoc[1] -= topOffset;
 
         previewHeight = frameLayout.getHeight();
         previewWidth = frameLayout.getWidth();
 
-        boundaryWidth = boundary.getMeasuredWidth();
-        boundaryHeight = boundary.getMeasuredHeight();
+        //boundaryWidth = click.getMeasuredWidth();
+        //boundaryHeight = click.getMeasuredHeight();
 
         if (previewing) {
             c.stopPreview();
@@ -237,4 +251,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         c.release();
         c = null;
     }
+
+    private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters){
+        Camera.Size bestSize = null;
+        List<Camera.Size> sizeList = parameters.getSupportedPreviewSizes();
+
+        bestSize = sizeList.get(0);
+
+        for(int i = 1; i < sizeList.size(); i++){
+            if((sizeList.get(i).width * sizeList.get(i).height) >
+                    (bestSize.width * bestSize.height)){
+                bestSize = sizeList.get(i);
+            }
+        }
+
+        return bestSize;
+    }
+
 }

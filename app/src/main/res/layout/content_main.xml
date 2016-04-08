@@ -4,39 +4,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <customcamera.rahul.com.customcamera.MySurfaceView
+        android:id="@+id/surfaceview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <RelativeLayout
         android:id="@+id/rel"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <RelativeLayout
-            android:id="@+id/boundary"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@+id/controls"
-            android:layout_margin="50dp"
-            />
-
-        <LinearLayout
-            android:id="@+id/controls"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:orientation="horizontal"
-            android:weightSum="1">
-
-
             <Button
                 android:id="@+id/click"
-                android:layout_width="0dp"
-                android:alpha=".4"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:alpha=".4"
+                android:layout_alignParentBottom="true"
                 android:text="Click" />
-
-
-        </LinearLayout>
 
 
     </RelativeLayout>
