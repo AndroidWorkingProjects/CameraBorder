@@ -38,6 +38,11 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private final int BORDER_LENGTH = 20;
 
     private Paint paint;
+    private PictureCallbackInterface pictureCallbackInterface;
+
+    public interface PictureCallbackInterface{
+        void getPicture(byte[] data);
+    }
 
     // this constructor used when requested as an XML resource
     public MySurfaceView(Context context, AttributeSet attrs) {
@@ -88,25 +93,17 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    public byte[] getPic(int x, int y, int width, int height) {
+    public byte[] getPic(byte[] data, int x, int y, int width, int height) {
         System.gc();
         Bitmap b = null;
         Camera.Size s = mParameters.getPreviewSize();
 
-        YuvImage yuvimage = new YuvImage(mBuffer, ImageFormat.NV21, s.width, s.height, null);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+        bitmap = Bitmap.createBitmap(bitmap,x,y,width, height);
+
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        yuvimage.compressToJpeg(new Rect(x, y, width, height), 100, outStream); // make JPG
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream);
         return outStream.toByteArray();
-      /*  b = BitmapFactory.decodeByteArray(outStream.toByteArray(), 0, outStream.size()); // decode JPG
-        if (b != null) {
-            //Log.i(TAG, "getPic() WxH:" + b.getWidth() + "x" + b.getHeight());
-        } else {
-            //Log.i(TAG, "getPic(): Bitmap is null..");
-        }
-        yuvimage = null;
-        outStream = null;
-        System.gc();*/
-        //return b;
     }
 
     private void updateBufferSize() {
@@ -154,10 +151,6 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        // Surface will be destroyed when we return, so stop the preview.
-        // Because the CameraDevice object is not a shared resource, it's very
-        // important to release it when the activity is paused.
-        //Log.i(TAG,"SurfaceDestroyed being called");
         mCamera.stopPreview();
         mCamera.release();
         mCamera = null;
@@ -173,6 +166,7 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         try {
             mParameters = mCamera.getParameters();
             mParameters.set("orientation","landscape");
+            //mParameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             for (Integer i : mParameters.getSupportedPreviewFormats()) {
                 //Log.i(TAG, "supported preview format: " + i);
             }
@@ -202,6 +196,16 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
                 mCamera.getParameters().getFocusMode().equals(mCamera.getParameters().FOCUS_MODE_MACRO)){
             mCamera.autoFocus(autoFocus);
         }
+    }
+
+    public void takePicture(){
+        mCamera.takePicture(null, null, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+                pictureCallbackInterface = (MainActivity)getContext();
+                pictureCallbackInterface.getPicture(data);
+            }
+        });
     }
 
     public void setFlash(boolean flash){
