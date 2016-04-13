@@ -93,19 +93,6 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    public byte[] getPic(byte[] data, int x, int y, int width, int height) {
-        System.gc();
-        Bitmap b = null;
-        Camera.Size s = mParameters.getPreviewSize();
-
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        bitmap = Bitmap.createBitmap(bitmap,x,y,width, height);
-
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream);
-        return outStream.toByteArray();
-    }
-
     private void updateBufferSize() {
         mBuffer = null;
         System.gc();
@@ -117,10 +104,12 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         //Log.i("surfaceCreated", "buffer length is " + mBuffer.length + " bytes");
     }
 
+    @Override
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, acquire the camera and tell it where to draw.
         try {
             mCamera = Camera.open(); // WARNING: without permission in Manifest.xml, crashes
+            Log.i("Camera Stage: ", "Opened");
         }
         catch (RuntimeException exception) {
             //Log.i(TAG, "Exception on Camera.open(): " + exception.toString());
@@ -150,15 +139,18 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         mCamera.stopPreview();
         mCamera.release();
         mCamera = null;
+        Log.i("Camera Stage: ", "Destroyed");
     }
 
     // FYI: not called for each frame of the camera preview
     // gets called on my phone when keyboard is slid out
     // requesting landscape orientation prevents this from being called as camera tilts
+    @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
         //Log.i(TAG, "Preview: surfaceChanged() - size now " + w + "x" + h);
         // Now that the size is known, set up the camera parameters and begin
@@ -166,7 +158,7 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         try {
             mParameters = mCamera.getParameters();
             mParameters.set("orientation","landscape");
-            //mParameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+            mParameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             for (Integer i : mParameters.getSupportedPreviewFormats()) {
                 //Log.i(TAG, "supported preview format: " + i);
             }
@@ -175,6 +167,7 @@ class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
             for (Camera.Size size : sizes) {
                 //Log.i(TAG, "supported preview size: " + size.width + "x" + size.height);
             }
+            mParameters.setPictureSize(mParameters.getPreviewSize().width,mParameters.getPreviewSize().height);
             mCamera.setParameters(mParameters); // apply the changes
         } catch (Exception e) {
             // older phone - doesn't support these calls

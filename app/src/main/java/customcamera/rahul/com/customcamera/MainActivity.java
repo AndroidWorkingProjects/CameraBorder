@@ -28,7 +28,6 @@ import java.util.List;
 public class MainActivity extends Activity implements MySurfaceView.PictureCallbackInterface {
 
     private final int BORDER_MARGIN = 40;
-    boolean previewing = false;
     private MySurfaceView mySurfaceView = null;
     private SurfaceHolder sh;
     private Camera c;
@@ -42,6 +41,7 @@ public class MainActivity extends Activity implements MySurfaceView.PictureCallb
     private int previewHeight;
     private int previewWidth;
     private int[] cameraResolution;
+    public static Bitmap snap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,22 +119,37 @@ public class MainActivity extends Activity implements MySurfaceView.PictureCallb
     }
 
     @Override
-    public void getPicture(byte[] data) {
-        Bitmap bmp = BitmapFactory.decodeByteArray(data, 0, data.length);
-        Log.i("asdad", "" + bmp.getHeight() + " " + bmp.getWidth());
+    public void onResume(){
+        super.onResume();
+        if(snap!=null) {
+            snap.recycle();
+        }
+    }
 
-        cameraResolution[0] = bmp.getWidth();
-        cameraResolution[1] = bmp.getHeight();
+    @Override
+    public void getPicture(byte[] data) {
+        snap = BitmapFactory.decodeByteArray(data, 0, data.length);
+        Log.i("asdad", "" + snap.getHeight() + " " + snap.getWidth());
+
+        cameraResolution[0] = snap.getWidth();
+        cameraResolution[1] = snap.getHeight();
 
         //boundary.getLocationInWindow(boundaryLoc);
 
         float aspectX = (float) cameraResolution[0]/previewWidth;
         float aspectY = (float) cameraResolution[1]/previewHeight;
-        //Double []aspect = getRatio();
-        byte[] croppedImg = mySurfaceView.getPic(data, (int) (boundaryLoc[0] * aspectX), (int) (boundaryLoc[1] * aspectY), (int) (boundaryWidth * aspectX) , (int) (boundaryHeight * aspectY) );
+        //Double []aspect =
+        int topLeftX = (int) (boundaryLoc[0] * aspectX);
+        int topLeftY = (int) (boundaryLoc[1] * aspectY);
+        int width = (int) (boundaryWidth * aspectX);
+        int height = (int) (boundaryHeight * aspectY);
+        //byte[] croppedImg = mySurfaceView.getPic(data, (int) (boundaryLoc[0] * aspectX), (int) (boundaryLoc[1] * aspectY), (int) (boundaryWidth * aspectX) , (int) (boundaryHeight * aspectY) );
 
         Intent intent = new Intent(getApplicationContext(), Preview.class);
-        intent.putExtra("PHOTO", croppedImg);
+        intent.putExtra("LEFTX", topLeftX);
+        intent.putExtra("LEFTY", topLeftY);
+        intent.putExtra("WIDTH", width);
+        intent.putExtra("HEIGHT", height);
         startActivity(intent);
 
         overridePendingTransition(0, 0);
